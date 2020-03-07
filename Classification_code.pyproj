@@ -23,6 +23,7 @@
     <Compile Include="build_model.py" />
     <Compile Include="classification_model_collection.py" />
     <Compile Include="data.py" />
+    <Compile Include="dataset_generator.py" />
     <Compile Include="inference.py" />
     <Compile Include="opencv_functional.py" />
     <Compile Include="run.py" />

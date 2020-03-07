@@ -23,10 +23,11 @@ class ModelTraining(object):
         self.NETWORK_MODEL          = {'CLASSIFICATION':'mobilenet_v2'} # resnet_v2_50, inception_resnet_v2, mobilenet_v2
 
 
-        self.PATH_PROJECT            = 'D:/HDL/Project/Classification/'+args.pj_name
+        self.PATH_PROJECT            = 'D:/HDL/Project/Classification/'+args.dataset_name
         self.PATH_DATASET_IMAGE      = self.PATH_PROJECT + '/DataSet/Train'
         self.PATH_DATASET_VALIDATION = self.PATH_PROJECT + '/DataSet/Validation'
         self.PATH_CHECKPOINT         = self.PATH_PROJECT + '/Checkpoint/'
+        self.PATH_CHECKPOINT_SAVE    = self.PATH_PROJECT + '/Checkpoint/' + args.pj_name + '/'
         self.PATH_RESULT             = 'D:/Dataset/Result/'
 
         # only classification
@@ -111,13 +112,15 @@ class ModelTraining(object):
     def _loadCheckpoint(self, session, saver):
         if not os.path.exists(self.PATH_CHECKPOINT):
             os.makedirs(self.PATH_CHECKPOINT)
+        if not os.path.exists(self.PATH_CHECKPOINT_SAVE):
+            os.makedirs(self.PATH_CHECKPOINT_SAVE)
         print('Checkpoint path : {}'.format(self.PATH_CHECKPOINT))
 
         if self.CHECKPOINT_CONTINUE:
-            saver.restore(session, tf.train.latest_checkpoint(self.PATH_CHECKPOINT))
+            saver.restore(session, tf.train.latest_checkpoint(self.PATH_CHECKPOINT_SAVE))
             print('Loaded latest model checkpoint.')
         elif self.TRANSFER_LEARNING:
-            ret = tf.train.latest_checkpoint(self.PATH_CHECKPOINT)
+            ret = tf.train.latest_checkpoint(self.PATH_CHECKPOINT_SAVE)
             if not ret == None:
                 saver.restore(session, ret)
                 print('Loaded transfer learning model checkpoint.')
@@ -223,11 +226,13 @@ class ModelTraining(object):
                 # checkpoint & pretrain checkpoit load
                 if not os.path.exists(self.PATH_CHECKPOINT):
                     os.makedirs(self.PATH_CHECKPOINT)
+                if not os.path.exists(self.PATH_CHECKPOINT_SAVE):
+                    os.makedirs(self.PATH_CHECKPOINT_SAVE)
 
                 if mode == 'CLASSIFICATION':
                     model.restore_fn(sess)
                 elif self.CHECKPOINT_CONTINUE == True:
-                    model.restore_fn(sess, self.PATH_CHECKPOINT)
+                    model.restore_fn(sess, self.PATH_CHECKPOINT_SAVE)
 
                 # Data generate - Validation
                 input_valid_images, label_valid_images = dataset.dataset_generator(x_valid, self.DATASET_CROP_SIZE, self.DATASET_CROP_COUNT)
@@ -314,10 +319,10 @@ class ModelTraining(object):
                         
                         if b == batch_total - 1:
                             # save model checkpoint
-                            checkpoint_save_path = "%s/%04d-%04d"%(self.PATH_CHECKPOINT,e,b)
+                            checkpoint_save_path = "%s/%04d-%04d"%(self.PATH_CHECKPOINT_SAVE,e,b)
                             if (e+1)%10 == 0:
                                 model.save_checkpoint(sess, checkpoint_save_path, mode)
-                                model.save_checkpoint(sess, self.PATH_CHECKPOINT, mode)
+                                model.save_checkpoint(sess, self.PATH_CHECKPOINT_SAVE, mode)
                                 print('Saved the checkpoint.(path:{})'.format(checkpoint_save_path))
 
                             ## input image save
@@ -358,8 +363,8 @@ class ModelTraining(object):
                     #        print(valid_acc_avg)
 
         # txt file save
-        #self._SaveTrainInfoTextFile(self.PATH_CHECKPOINT, e, 0.0, best_loss) # hcw, cutmix
-        #self._SaveLossTextFile(self.PATH_CHECKPOINT, loss_list) # hcw, cutmix
+        #self._SaveTrainInfoTextFile(self.PATH_CHECKPOINT_SAVE, e, 0.0, best_loss) # hcw, cutmix
+        #self._SaveLossTextFile(self.PATH_CHECKPOINT_SAVE, loss_list) # hcw, cutmix
         end_time = time.time()
         print('Train Time :', end_time-start_time)
         time.sleep(1)
