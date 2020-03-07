@@ -1,5 +1,7 @@
 import numpy as np
 import os
+import sys
+sys.path.insert(1, './models/')
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from tensorflow.contrib.framework.python.ops.variables import get_or_create_global_step

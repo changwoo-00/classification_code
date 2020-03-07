@@ -360,9 +360,10 @@ def dataset_generator_PAD(images, crop_size, image_count, blur_enable, blur_kern
 
     return input_image, input_label
 
-def dataset_generator(images, scale, crop_size, image_count):
+def dataset_generator(images, crop_size, image_count):
     input_image = []
     input_label = []
+    scale = 1
 
     for image in images:
         for no in range(0, image_count):

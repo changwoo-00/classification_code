@@ -1,12 +1,10 @@
-
-
 import os
 import sys
 import tensorflow as tf
 import argparse
 import train
 import inference
-import dataset
+import dataset_generator
 
 class  ConfigInference(object):
 
@@ -19,7 +17,7 @@ class  ConfigInference(object):
                             default='training',
                             help='training or Inference')
         parser.add_argument('--pj_name', 
-                            default='HKC_3class_dataset_v1', 
+                            default='128_train_set', 
                             type=str)
         parser.add_argument('--data_path',
                             default="D:\\Dataset\\[Project] HKC H5 SAMPLE TEST IMAGE\\Dataset_v1\\", 
@@ -44,7 +42,7 @@ class  ConfigInference(object):
 	# CLASSIFICATION = 6,
 	# SEGMENTATION = 7
         if args.generate_dataset != None:
-            g_dataset = dataset.Generate_dataset(args.data_path, args.pj_name, args.val_split)
+            g_dataset = dataset_generator.Generate_dataset(args.data_path, args.pj_name, args.val_split)
             g_dataset.Makedir()
             g_dataset.generate_dataset()
 
@@ -52,8 +50,6 @@ class  ConfigInference(object):
         if args.mode == 'training':
             model = train.ModelTraining(
                 mode=6,
-                layer_size=3,
-                network_feature_size=32,
                 crop_size=299,
                 batch_size=8,
                 epoch=200,
