@@ -1,0 +1,98 @@
+import numpy as np
+import os
+import tensorflow as tf
+import tensorflow.contrib.slim as slim
+from tensorflow.contrib.framework.python.ops.variables import get_or_create_global_step
+from Inception_resnet import inception_resnet_v2, inception_resnet_v2_arg_scope
+
+class ClassificationModelCollection(object):
+    def __init__(self, model, image_size, image_num, class_num, batch_size, root_pretrain, init_learning_rate, learning_rate_decay_factor):
+        print('Building classification model...')
+        self.image_size = image_size
+
+        logits, end_points = self._select_model(model, class_num, root_pretrain)
+
+        # restore 할 변수
+        variables_to_restore = slim.get_variables_to_restore(exclude = self.exclude)
+
+        self.global_step = tf.Variable(0, trainable=False)
+
+        initial_learning_rate = init_learning_rate
+        learning_rate_decay_factor = learning_rate_decay_factor
+        num_epochs_before_decay = 5
+
+        num_batches_per_epoch = int(image_num / batch_size)
+        num_steps_per_epoch = num_batches_per_epoch 
+        #decay_steps = int(num_epochs_before_decay * num_steps_per_epoch)
+
+        self.learning_rate = learning_rate = tf.train.exponential_decay(learning_rate = initial_learning_rate,
+                                                                        global_step = self.global_step,
+                                                                        decay_steps = 1000,      # hcw decay_steps = decay_steps,
+                                                                        decay_rate = learning_rate_decay_factor,
+                                                                        staircase = False)
+
+        # loss 
+        #cross_entropy = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=self.labels)) 
+        # optimizer 
+        #self.train_op = tf.train.AdamOptimizer(learning_rate=lr).minimize(cross_entropy)
+        
+        one_hot_labels = slim.one_hot_encoding(self.labels, class_num)
+        self.loss = tf.losses.softmax_cross_entropy(onehot_labels=one_hot_labels, logits=logits)
+        self.total_loss = total_loss = tf.losses.get_total_loss()
+
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        self.train_op = slim.learning.create_train_op(total_loss, optimizer, global_step = self.global_step)
+        
+        self.predicted_all_class = end_points['Predictions']
+
+        self.predicted_class = predicted_class = tf.argmax(end_points['Predictions'], 1)
+        accuracy = tf.metrics.accuracy(tf.cast(self.labels, tf.int64), predicted_class)
+        self.my_accuracy = tf.reduce_mean(tf.cast(tf.equal(self.labels, predicted_class), dtype=tf.float32))
+
+        self.saver_restore = tf.train.Saver(variables_to_restore) # hcw
+        self.saver = tf.train.Saver(tf.global_variables()) # hcw
+        #self.saver = tf.train.Saver(variables_to_restore)
+
+    def _select_model(self, model, class_num, root_pretrain):
+        self.input = tf.placeholder(tf.float32, [None, self.image_size[1], self.image_size[0], 3], name='image_input')
+        self.labels = tf.placeholder(tf.int64, [None])
+        self.is_training = tf.placeholder(tf.bool, name='is_training')  #hcw
+        self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')   #hcw
+
+        if model == 'inception_resnet_v2':
+            with slim.arg_scope(inception_resnet_v2_arg_scope()):
+                logits, end_points = inception_resnet_v2(self.input, class_num, is_training = self.is_training, dropout_keep_prob = self.keep_prob) #hcw
+                self.exclude = ['InceptionResnetV2/AuxLogits', 'InceptionResnetV2/Logits'] 
+                self.last_layer_name = 'Predictions'
+                self.path_pretrain = root_pretrain + '\\' + 'inception_resnet_v2.ckpt'
+        else:
+            raise ValueError('Error: the model is not available.')
+
+        return logits, end_points
+
+    def restore_fn(self, sess, checkpoint_file = None):
+        if not checkpoint_file:
+            checkpoint_file = self.path_pretrain
+        return self.saver_restore.restore(sess, checkpoint_file)
+
+    def save_checkpoint(self, sess, path, save_name):
+        if not os.path.exists(path):
+            os.makedirs(path)
+        tf.train.Saver(tf.global_variables()).save(sess, '{}\\{}'.format(path, save_name))
+
+    def train_step(self, sess, images, labels):
+        loss, predicted_class, learning_rate = sess.run([self.train_op, self.predicted_class, self.learning_rate], feed_dict={self.input:images, self.labels:labels, self.keep_prob:0.5, self.is_training:True})    #hcw
+        return loss, predicted_class, learning_rate, None
+
+    def validation_step(self, sess, images, labels):
+        loss, predicted_class, accuracy = sess.run([self.total_loss, self.predicted_class, self.my_accuracy], feed_dict={self.input:images, self.labels:labels, self.keep_prob:1.0, self.is_training:False})  #hcw
+        return accuracy, predicted_class
+
+    def save_image(self, utils, save_path, input_image, label_image, output_image, class_names, predicted_class):
+        # input
+        input_merge_images = utils.mergeimage(input_image)
+        utils.saveimage(input_merge_images, save_path, 'Train_Input')
+        # result
+        utils.imagePredictLabel(input_image, label_image, class_names, predicted_class)
+        result_images = utils.mergeimage(input_image)
+        utils.saveimage(result_images, save_path, 'Train_Result')

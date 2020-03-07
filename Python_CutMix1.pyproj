@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{6b863f18-6ab0-4221-815d-73c9d8d01e25}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>run.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>CondaEnv|CondaEnv|cf_1</InterpreterId>
+    <IsWindowsApplication>False</IsWindowsApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="augmentation_transforms.py" />
+    <Compile Include="build_model.py" />
+    <Compile Include="checkpoint_to_protobuf.py" />
+    <Compile Include="classification_model_collection.py" />
+    <Compile Include="conv_blocks.py" />
+    <Compile Include="data.py" />
+    <Compile Include="dataset.py" />
+    <Compile Include="ImageEnhance.py" />
+    <Compile Include="Inception_resnet.py" />
+    <Compile Include="inference.py" />
+    <Compile Include="mobilenet.py" />
+    <Compile Include="mobilenet_v2.py" />
+    <Compile Include="net_ResidualNet_DM.py" />
+    <Compile Include="net_ResidualNet_DN.py" />
+    <Compile Include="net_ResidualNet_SR.py" />
+    <Compile Include="opencv_functional.py" />
+    <Compile Include="RabbitMQ_producer.py" />
+    <Compile Include="resnet.py" />
+    <Compile Include="resnet_utils.py" />
+    <Compile Include="run.py" />
+    <Compile Include="train.py" />
+    <Compile Include="utils.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="CondaEnv|CondaEnv|cf_1" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>
