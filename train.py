@@ -58,7 +58,7 @@ class ModelTraining(object):
 
         self.IS_MODEL['CLASSIFICATION'] = True
 
-        self.cutmix = args.cutmix
+        self.apply_cutmix = args.cutmix
 
 
     def setDataAugmentationRotation(self, enable_CW90, enable_CCW90, enable_h_flip, enable_v_flip):
@@ -140,29 +140,32 @@ class ModelTraining(object):
         print('Epoch [{0:2d}/{1:2d}], Batch [{2:4d}/{3:4d}] : {4:}'.format((cur_epoch + 1), total_epoch, (cur_iterator+1), total_iterator, text))
 
     #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-    def cutmix(self, batch_img, batch_label, class_num, c_size):
+    def cutmix(self, batch_img, batch_label, class_num, c_size, rate):
         #print('cutmix')
-        batch_img_s, batch_label_s = batch_img.copy(), batch_label.copy()
-        c = list(zip(batch_img_s, batch_label_s))
-        shuffle(c)
-        batch_img_s, batch_label_s = zip(*c)
-        img_W = np.shape(batch_img_s)[1]
-        img_H = np.shape(batch_img_s)[2]
-        #r_w = np.random.randint(np.floor(img_W/3),img_W-1)
-        #r_h = np.random.randint(np.floor(img_H/3),img_H-1)
-        c_size_min = 30
-        c_size = np.max([c_size_min,c_size])
-        r_w = np.random.randint(c_size_min,np.min([c_size,127]))
-        r_h = np.random.randint(c_size_min,np.min([c_size,127]))
-        r_x = np.random.randint(0,img_W-r_w-1)
-        r_y = np.random.randint(0,img_H-r_h-1)
-        ratio_lambda = 1 - (r_w*r_h)/(img_W*img_H)
-        for i in range(len(batch_label)):
-            batch_img[i][r_x:r_x+r_w,r_y:r_y+r_h,:] = batch_img_s[i][r_x:r_x+r_w,r_y:r_y+r_h,:]
+        if np.random.uniform(0,1) <= rate:
+
+
+            batch_img_s, batch_label_s = batch_img.copy(), batch_label.copy()
+            c = list(zip(batch_img_s, batch_label_s))
+            shuffle(c)
+            batch_img_s, batch_label_s = zip(*c)
+            img_W = np.shape(batch_img_s)[1]
+            img_H = np.shape(batch_img_s)[2]
+            #r_w = np.random.randint(np.floor(img_W/3),img_W-1)
+            #r_h = np.random.randint(np.floor(img_H/3),img_H-1)
+            c_size_min = 30
+            c_size = np.max([c_size_min,c_size])
+            r_w = np.random.randint(c_size_min,np.min([c_size,127]))
+            r_h = np.random.randint(c_size_min,np.min([c_size,127]))
+            r_x = np.random.randint(0,img_W-r_w-1)
+            r_y = np.random.randint(0,img_H-r_h-1)
+            ratio_lambda = 1 - (r_w*r_h)/(img_W*img_H)
+            for i in range(len(batch_label)):
+                batch_img[i][r_x:r_x+r_w,r_y:r_y+r_h,:] = batch_img_s[i][r_x:r_x+r_w,r_y:r_y+r_h,:]
         
-        batch_label = [i*ratio_lambda for i in batch_label]
-        batch_label_s = [i*(1-ratio_lambda) for i in batch_label_s]
-        batch_label = [sum(i) for i in zip(batch_label,batch_label_s)]
+            batch_label = [i*ratio_lambda for i in batch_label]
+            batch_label_s = [i*(1-ratio_lambda) for i in batch_label_s]
+            batch_label = [sum(i) for i in zip(batch_label,batch_label_s)]
         return batch_img, batch_label
     #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
     # train #
@@ -286,8 +289,6 @@ class ModelTraining(object):
 
                         batch_labels_num = batch_labels.copy()
 
-                        ##### cutmix #####
-
                         ## labels to one hot encoding ##
                         batch_one_hot_list = []
                         for i in range(len(batch_labels)):
@@ -295,16 +296,12 @@ class ModelTraining(object):
                             a[batch_labels[i]] = 1
                             batch_one_hot_list.append(list(a))
                         batch_labels = batch_one_hot_list
-                        #################################
-                        #c_size = np.ceil(96*(e+1)/self.HYPERP_EPOCH) increasing window
-                        c_size = 35 + e
-                        if self.cutmix == True:
-                            if np.random.uniform(0,1) <= 1:
-                                batch_images, batch_labels = self.cutmix(batch_images, batch_labels, class_num, c_size)
-                            print('batch_labels')
-                            print(batch_labels)    
-                        
-                        ##################
+
+                        ## apply cutmix ##
+                        if self.apply_cutmix == True:  
+                            #c_size = np.ceil(96*(e+1)/self.HYPERP_EPOCH) increasing window
+                            c_size = 35 + e
+                            batch_images, batch_labels = self.cutmix(batch_images, batch_labels, class_num, c_size, rate=1)
 
                         # Train Step
                         loss, predicted_class, cur_learning_rate, acc = model.train_step(sess, batch_images, batch_labels)
