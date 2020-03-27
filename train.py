@@ -139,7 +139,7 @@ class ModelTraining(object):
                 text += '{0:} = {1:3.2f} '.format(answer, value)
         print('Epoch [{0:2d}/{1:2d}], Batch [{2:4d}/{3:4d}] : {4:}'.format((cur_epoch + 1), total_epoch, (cur_iterator+1), total_iterator, text))
 
-    #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+    #____________________________________________________________________________________________________________________________________________________#
     def cutmix(self, batch_img, batch_label, class_num, c_size, rate):
         #print('cutmix')
         if np.random.uniform(0,1) <= rate:
@@ -167,8 +167,7 @@ class ModelTraining(object):
             batch_label_s = [i*(1-ratio_lambda) for i in batch_label_s]
             batch_label = [sum(i) for i in zip(batch_label,batch_label_s)]
         return batch_img, batch_label
-    #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-    # train #
+    #__________________________________________________________________________ Train __________________________________________________________________________#
     def train(self):
         start_time = time.time()
         mode = [key for (key, value) in self.IS_MODEL.items() if value == True]
@@ -254,8 +253,8 @@ class ModelTraining(object):
                     input_count = len(input_images)
                     label_count = 0
 
-
                     start = time.time() 
+
                     # Data Augmentation
                     dataset.dataAugmentation_run_thread(mode=mode,
                                                     dict_rotation=self.AUG_ROTATION,
@@ -263,7 +262,6 @@ class ModelTraining(object):
                                                     dict_noise_gaussian=self.AUG_NOISE_GAUSSIAN,
                                                     input_images=input_images,
                                                     label_images=label_images)
-                    print("time :", time.time() - start)
 
                     print('Data generator : Input image count = {}, Label image count = {}'.format(input_count, label_count))
 
