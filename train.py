@@ -76,6 +76,7 @@ class ModelTraining(object):
         class_num = len(class_names)
 
         image_list_path, image_list_train_labels = dataset.read_image_path_txt(self.FILE_DATASET_IMAGE_LIST, class_num)
+        
         image_train_list = dataset.read_list_data(self.PATH_DATASET_IMAGE,   # image folder path
                                                     image_list_path,         # image name list
                                                     (self.DATASET_CROP_SIZE, self.DATASET_CROP_SIZE),
@@ -179,11 +180,12 @@ class ModelTraining(object):
         mode = mode[0]
         network_model = self.NETWORK_MODEL[mode]
         
-        # load dataset(Train, Validation)
+        #_____________________________________________________________load dataset(Train, Validation) __________________________________________________________________________#
         
         x_train, y_train, x_valid, y_valid, class_names = self._loadDataSetClassification()
+        # x_train => type : np.array(uint8) list, ex : [array([[[68,68,68]...,array(...]
+        # y_train => type : tuple, ex : ('4','2','0',...)
         self.DATASET_CROP_COUNT = 1
-        
 
         class_num = len(class_names)
         train_image_num = len(x_train)
@@ -203,7 +205,7 @@ class ModelTraining(object):
 
 
         #__________________________________________________________________________ Training __________________________________________________________________________#
-        # Train
+        
         print('Starting at Epoch = {}, learning rate = {}'.format(self.HYPERP_EPOCH, self.HYPERP_LEARNING_RATE))
 
         config = tf.ConfigProto()
@@ -265,7 +267,9 @@ class ModelTraining(object):
                     if input_count < self.BATCH_SIZE:
                         self.BATCH_SIZE = input_count
 
+                    # Dataset object 생성
                     train_data = dataset.DataSet(input_images, label_images)
+                    # train_data => type : data.DataSet Object
                     if input_valid_count > 0:
                         valid_data = dataset.DataSet(input_valid_images, label_valid_images)
 
@@ -277,6 +281,7 @@ class ModelTraining(object):
                             print('Train Stop...!!!')
                             break
 
+                        # Batch 추출
                         batch_images, batch_labels = train_data.next_batch(self.BATCH_SIZE)
 
                         batch_labels_num = batch_labels.copy()
@@ -301,6 +306,7 @@ class ModelTraining(object):
                         
                         ##################
 
+                        # Train Step
                         loss, predicted_class, cur_learning_rate, acc = model.train_step(sess, batch_images, batch_labels)
 
                         acc = acc[1]
@@ -332,35 +338,35 @@ class ModelTraining(object):
 
                             #self._SaveTrainInfoTextFile(checkpoint_save_path, e, loss, best_loss) @ hcw, cutmix
 
-                    ## validation  # hcw, cutmix 
-                    #valid_acc_list = []
-                    #batch_valid_total = math.ceil(input_valid_count / self.BATCH_SIZE);
-                    #for v in range(batch_valid_total):
-                    #    if self.TRAINING_STOP:
-                    #        break;
+                    # validation  # hcw, cutmix 
+                    valid_acc_list = []
+                    batch_valid_total = math.ceil(input_valid_count / self.BATCH_SIZE);
+                    for v in range(batch_valid_total):
+                        if self.TRAINING_STOP:
+                            break;
 
-                    #    batch_valid_images, batch_valid_labels = valid_data.next_batch(self.BATCH_SIZE)
+                        batch_valid_images, batch_valid_labels = valid_data.next_batch(self.BATCH_SIZE)
 
-                    #    ###################################
-                    #    batch_one_hot_list = []
-                    #    for i in range(len(batch_valid_labels)):
-                    #        a = np.zeros(class_num)
-                    #        a[batch_labels[i]] = 1
-                    #        batch_one_hot_list.append(a)
-                    #    batch_valid_labels = batch_one_hot_list
-                    #    ######################################
+                        ###################################
+                        batch_one_hot_list = []
+                        for i in range(len(batch_valid_labels)):
+                            a = np.zeros(class_num)
+                            a[batch_valid_labels[i]] = 1
+                            batch_one_hot_list.append(a)
+                        batch_valid_labels = batch_one_hot_list
+                        ######################################
 
-                    #    loss, predicted_valid_class, acc = model.validation_step(sess, batch_valid_images, batch_valid_labels)
+                        loss, predicted_valid_class, acc = model.validation_step(sess, batch_valid_images, batch_valid_labels)
 
-                    #    print(acc[1])
-                    #    valid_acc_list.append(acc[1])
+                        #print(acc[1])
+                        valid_acc_list.append(acc[1])
 
-                    #    if v == batch_valid_total - 1:
-                    #        valid_acc_avg = np.mean(valid_acc_list)
-                    #        #model.save_image(utils, checkpoint_save_path, batch_valid_images, batch_valid_labels, output_valid_image, class_names, predicted_valid_class, 'Validation') #hcw, cutmix
-                    #        print('[Weight] Update.')
-                    #        print("Validation Accuracy : ")
-                    #        print(valid_acc_avg)
+                        if v == batch_valid_total - 1:
+                            valid_acc_avg = np.mean(valid_acc_list)
+                            #model.save_image(utils, checkpoint_save_path, batch_valid_images, batch_valid_labels, output_valid_image, class_names, predicted_valid_class, 'Validation') #hcw, cutmix
+                            print('[Weight] Update.')
+                            print("Validation Accuracy : ")
+                            print(valid_acc_avg)
 
         # txt file save
         #self._SaveTrainInfoTextFile(self.PATH_CHECKPOINT_SAVE, e, 0.0, best_loss) # hcw, cutmix
