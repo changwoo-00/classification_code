@@ -237,7 +237,8 @@ class ModelTraining(object):
                     model.restore_fn(sess, self.PATH_CHECKPOINT_SAVE)
 
                 # Data generate - Validation
-                input_valid_images, label_valid_images = dataset.dataset_generator(x_valid, self.DATASET_CROP_SIZE, self.DATASET_CROP_COUNT)
+                input_valid_images = x_valid.copy()
+                label_valid_images = y_valid
                 input_valid_count = len(input_valid_images)
 
                 for e in range(self.HYPERP_EPOCH_START, self.HYPERP_EPOCH):
@@ -249,7 +250,6 @@ class ModelTraining(object):
                     label_images = y_train
                     input_count = len(input_images)
                     label_count = 0
-                    label_valid_images = y_valid
 
 
                     start = time.time() 
